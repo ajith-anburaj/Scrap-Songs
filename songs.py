@@ -4,6 +4,7 @@ import requests
 import os
 from multiprocessing import Pool
 
+
 def get_songs(albums):
     songs = []
     for album in albums:
@@ -19,7 +20,7 @@ def get_songs(albums):
                                   song['128_link']['link'],
                                   float(re.search(r'\(.*\)', song['128_link']['size']).group(0)[1:-4])))
                 except Exception as e:
-                    #print(e, song)
+                    # print(e, song)
                     continue
     return songs
 
@@ -35,11 +36,12 @@ def top_songs(albums, limit, quality):
 
 
 def download_songs(song):
-    if not os.path.exists('songs/' + song[0] + '.mp3'):
+    if not os.path.exists('/home/ajith/Music/songs/' + song[0] + '.mp3'):
         data = requests.get(song[2])
-        with open('songs/' + song[0] + '.mp3', 'wb') as f:
+        with open('/home/ajith/Music/songs/' + song[0] + '.mp3', 'wb') as f:
             f.write(data.content)
     print(song[0], ' done')
+
 
 if __name__ == '__main__':
     movies = pickle.load(open('movies_list.pickle', 'rb'))
@@ -47,13 +49,15 @@ if __name__ == '__main__':
     for movie in movies:
         total_movies += len(movie)
     songs = pickle.load(open('songs_list.pickle', 'rb'))
-    top_songs = top_songs(songs, 1500, 0)
+    top_songs = top_songs(songs, 5000, 0)
     total_size = 0
-    # for song in top_songs:
-    #     print(song)
-    #     total_size += song[3]
-    # print(total_size)
-    p = Pool(16)
+    print('first', top_songs[0][1])
+    print('last', top_songs[-1][1])
+    for song in top_songs:
+        print(song)
+        total_size += song[3]
+    print(total_size)
+    p = Pool(32)
     p.map(download_songs, top_songs)
     p.close()
     p.join()

@@ -6,12 +6,12 @@ import pickle
 
 class Scrap:
 
-    base_url = 'https://www.masstamilan.com'
+    base_url = 'https://tamilpaatu.com'
 
     def get_page_soup(self, url):
 
-        req = urllib.request.Request(url, headers={'User-Agent': "Mozilla"})
         try:
+            req = urllib.request.Request(url, headers={'User-Agent': "Mozilla"})
             page = urllib.request.urlopen(req)
             return BeautifulSoup(page, 'html.parser')
         except Exception as e:
@@ -30,23 +30,26 @@ class Scrap:
     def get_movies(self, movie_index):
 
         movies_list = []
-        page = movie_index[1]
+        page = self.base_url + movie_index[1]
         print(page)
-        while True:
-            page = self.get_page_soup(page)
-            movies = page.find_all('div', attrs={'class': 'botitem'})
-            for movie in movies:
-                movies_list.append((movie.h1.text, movie.a['href']))
-            next_page = page.find('span', attrs={'class': 'next'})
-            if next_page:
-                page = self.base_url + next_page.a['href']
-                print(page)
-            else:
-                break
+        try:
+            while True:
+                page = self.get_page_soup(page)
+                movies = page.find_all('div', attrs={'class': 'a-i'})
+                for movie in movies:
+                    movies_list.append((movie.h2.text, movie.a['href']))
+                next_page = page.find('span', attrs={'class': 'page next'})
+                if next_page and next_page.a:
+                    page = self.base_url + next_page.a['href']
+                    print(page)
+                else:
+                    break
+        except Exception as e:
+            print(e)
         return movies_list
 
     def get_songs_list(self, movie):
-        page = self.get_page_soup(movie[1])
+        page = self.get_page_soup(f'{self.base_url}{movie[1]}')
         try:
             songs_list = page.find('table', attrs={'id': 'tlist'}).find_all('tr')[1:]
             songs = dict()
@@ -55,7 +58,7 @@ class Scrap:
             for song in songs_list:
                 musics = songs['songs']
                 try:
-                    links = song.find_all('a', attrs={'class': 'dlink anim'})
+                    links = song.find_all('a', attrs={'class': 'dlink'})
                     if len(links) == 0:
                         print(song)
                     zip = page.find('h2', attrs={'class': 'ziparea normal'}).find_all('a')
@@ -92,9 +95,9 @@ def multi_process_song(movie):
 
 if __name__ == '__main__':
     scrap = Scrap()
-    page = scrap.get_page_soup('https://www.masstamilan.com/movie-index')
+    page = scrap.get_page_soup(f'{scrap.base_url}/movie-index')
     movie_index = scrap.get_movie_index(page)
-    p = Pool(20)
+    p = Pool(10)
     movies_list = p.map(multi_process_movie, movie_index)
     pickle.dump(movies_list, open('movies_list.pickle', 'wb'))
     songs = []
